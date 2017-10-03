@@ -1,5 +1,6 @@
 OPTIONS = {
-    "start_up": ["Find Scholarships", "Check Eligibility", "Report Problem", "Scholarship Information"],
+    "start_up": [{"name": "Find Scholarships"}, {"name": "Check Eligibility"}, {"name": "Report Problem"},
+                 {"name": "Scholarship Information"}],
     "search_scholarship": {
         "class": [{"name": "10th"}, {"name": "12th"}, {"name": "Graduate"}, {"name": "Post Graduate"},
                   {"name": "Skip"}],
