@@ -1,0 +1,8 @@
+# virtualenv
+venv
+secrets.json.prod
+secrets.json
+secrets.json.local
+.idea/
+__pycache__/
+*.py[cod]

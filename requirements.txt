@@ -1,0 +1,12 @@
+django==1.10
+Unipath
+PyMySQL==0.7.6
+djangorestframework==3.4.6
+django-redis>=4.0,<5.0
+django_dotenv>=1.4.1
+xmltodict
+requests
+gunicorn
+django_extensions
+pymongo==3.1.1
+
