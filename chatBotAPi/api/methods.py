@@ -19,8 +19,8 @@ def process_request(text, session_id):
         contexts = result.get('contexts')
         contexts_name_list = [context['name'] for context in contexts]
         options_list = get_options(contexts_name_list, action)
-        search_result = tasks.call_search_api(api_ai_response)
         if action_complete and action == "find-scholarship":
+            search_result = tasks.call_search_api(api_ai_response)
             scholarships_list = search_result['response']['scholarships']
         return {
             "scholarships": scholarships_list,
