@@ -41,6 +41,16 @@ def process_request(text, session_id):
                 speech = "You are Eligible for {scholarship_title}".format(scholarship_title=actual_scholarship)
             else:
                 speech = "You are Not Eligible for {scholarship_title}".format(scholarship_title=actual_scholarship)
+        if action_complete and action == "scholarship-info":
+            scholarship = result['parameters']['scholarship']
+            scholarship_auth_token = tasks.call_auth_api()
+            data_list = tasks.call_scholarships_api(scholarship_auth_token)
+            scholarship_dict = create_scholarship_dict(data_list)
+            actual_scholarship = (process.extractOne(scholarship, scholarship_dict.keys()))[0]
+            if actual_scholarship in scholarship_dict:
+                scholarship_nid = scholarship_dict[actual_scholarship]
+                scholarship_detail = tasks.call_scholarship_detail_api(scholarship_nid, scholarship_auth_token)
+                speech = scholarship_detail
         return {
             "scholarships": scholarships_list,
             "options": options_list,
@@ -73,9 +83,6 @@ def get_scholarship_info(scholarship):
     scholarship_dict = create_scholarship_dict(data_list)
     actual_scholarship = (process.extractOne(scholarship, scholarship_dict.keys()))[0]
     actual_scholarship_rules = create_scholarship_rules(actual_scholarship, data_list)
-    # if actual_scholarship in scholarship_dict:
-    #     scholarship_nid = scholarship_dict[actual_scholarship]
-    #     scholarship_detail = tasks.call_scholarship_detail_api(scholarship_nid,scholarship_auth_token)
     return actual_scholarship, actual_scholarship_rules
 
 
