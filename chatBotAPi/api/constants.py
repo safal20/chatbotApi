@@ -5,7 +5,7 @@ OPTIONS = {
         "class": [{"name": "10th"}, {"name": "12th"}, {"name": "Graduate"}, {"name": "Post Graduate"},
                   {"name": "Skip"}],
         "religion": [{"name": "Hindu"}, {"name": "Muslim"}, {"name": "Sikh"}, {"name": "Christian"},
-                     {"name": "Budhism"}, {"name": "Skip"}],
+                     {"name": "Buddhism"}, {"name": "Skip"}],
         "gender": [{"name": "Male"}, {"name": "Female"}, {"name": "Skip"}],
         "interest_area": [{"name": "Merit"}, {"name": "Low Income"}, {"name": "Sports"}, {"name": "Science"},
                           {"name": "Maths"}, {"name": "Literary Art"}, {"name": "Skip"}],

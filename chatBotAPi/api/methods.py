@@ -23,6 +23,8 @@ def process_request(text, session_id):
         if action_complete and action == "find-scholarship":
             search_result = tasks.call_search_api(api_ai_response)
             scholarships_list = search_result['response']['scholarships']
+            if len(scholarships_list) == 0:
+                speech = "I could not find any scholarships for this search criteria"
         elif action_complete and action == "check-eligibility":
             count = 0
             scholarship = result['parameters']['scholarship']
@@ -56,7 +58,7 @@ def process_request(text, session_id):
             pass
         elif action_complete and action == "request-call":
             pass
-        if action_complete:
+        if action_complete and not action == "input.unknown":
             options_list = get_options([], "startup")
         return {
             "scholarships": scholarships_list,
