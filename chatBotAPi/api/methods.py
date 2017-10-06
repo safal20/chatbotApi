@@ -1,5 +1,5 @@
-from api import tasks
-from api import constants
+from . import tasks
+from . import constants
 from fuzzywuzzy import process
 
 
@@ -23,7 +23,7 @@ def process_request(text, session_id):
         if action_complete and action == "find-scholarship":
             search_result = tasks.call_search_api(api_ai_response)
             scholarships_list = search_result['response']['scholarships']
-        if action_complete and action == "check-eligibility":
+        elif action_complete and action == "check-eligibility":
             count = 0
             scholarship = result['parameters']['scholarship']
             religion = result['parameters']['religion']
@@ -41,16 +41,23 @@ def process_request(text, session_id):
                 speech = "You are Eligible for {scholarship_title}".format(scholarship_title=actual_scholarship)
             else:
                 speech = "You are Not Eligible for {scholarship_title}".format(scholarship_title=actual_scholarship)
-        if action_complete and action == "scholarship-info":
+        elif action_complete and action == "scholarship-info":
             scholarship = result['parameters']['scholarship']
             scholarship_auth_token = tasks.call_auth_api()
             data_list = tasks.call_scholarships_api(scholarship_auth_token)
             scholarship_dict = create_scholarship_dict(data_list)
             actual_scholarship = (process.extractOne(scholarship, scholarship_dict.keys()))[0]
+            print(actual_scholarship)
             if actual_scholarship in scholarship_dict:
                 scholarship_nid = scholarship_dict[actual_scholarship]
                 scholarship_detail = tasks.call_scholarship_detail_api(scholarship_nid, scholarship_auth_token)
                 speech = scholarship_detail
+        elif action_complete and action == "report-problem":
+            pass
+        elif action_complete and action == "request-call":
+            pass
+        if action_complete:
+            options_list = get_options([], "startup")
         return {
             "scholarships": scholarships_list,
             "options": options_list,
@@ -60,7 +67,7 @@ def process_request(text, session_id):
 
 def get_options(contexts_name_list, action):
     all_options = []
-    if action == "action.unknown":
+    if action == "input.unknown":
         all_options = constants.OPTIONS.get("fallback")
     elif action == "find-scholarship":
         if constants.CONTEXTS_NAME_LIST["context_class"] in contexts_name_list:

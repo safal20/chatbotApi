@@ -18,5 +18,5 @@ CONTEXTS_NAME_LIST = {
     "context_class": "search_scholarship_dialog_params_class",
     "context_gender": "search_scholarship_dialog_params_gender",
     "context_religion": "search_scholarship_dialog_params_religion",
-    "context_interest_area": "search_scholarship_dialog_params_interest_area",
+    "context_interest_area": "search_scholarship_dialog_params_interest-area",
 }
