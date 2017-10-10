@@ -3,19 +3,16 @@ import csv
 import json
 
 from fuzzywuzzy import process
-from nltk.corpus import stopwords
-
-from nltk.tokenize import word_tokenize
 
 from config.settings.base import get_secret
 
 
-def remove_stopwords(text):
-    stop_words = set(stopwords.words('english'))
-    word_tokens = word_tokenize(text)
-    filtered_sentence = [w for w in word_tokens if not w in stop_words]
-    output_text = " ".join(filtered_sentence)
-    return output_text
+# def remove_stopwords(text):
+#     stop_words = set(stopwords.words('english'))
+#     word_tokens = word_tokenize(text)
+#     filtered_sentence = [w for w in word_tokens if not w in stop_words]
+#     output_text = " ".join(filtered_sentence)
+#     return output_text
 
 
 def get_rule_list():
