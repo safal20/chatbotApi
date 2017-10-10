@@ -1,3 +1,4 @@
+from api import helpers
 from . import tasks
 from . import constants
 from fuzzywuzzy import process
@@ -21,7 +22,7 @@ def process_request(text, session_id):
         contexts_name_list = [context['name'] for context in contexts]
         options_list = get_options(contexts_name_list, action)
         if action_complete and action == "find-scholarship":
-            search_result = tasks.call_search_api(api_ai_response)
+            search_result = tasks.search_scholarships(result['parameters'])
             scholarships_list = search_result['response']['scholarships']
             if len(scholarships_list) == 0:
                 speech = "I could not find any scholarships for this search criteria"
@@ -73,13 +74,13 @@ def get_options(contexts_name_list, action):
         all_options = constants.OPTIONS.get("fallback")
     elif action == "find-scholarship":
         if constants.CONTEXTS_NAME_LIST["context_class"] in contexts_name_list:
-            all_options = (constants.OPTIONS.get("search_scholarship")).get("class")
+            all_options = helpers.get_options("class")
         if constants.CONTEXTS_NAME_LIST["context_gender"] in contexts_name_list:
-            all_options = (constants.OPTIONS.get("search_scholarship")).get("gender")
+            all_options = helpers.get_options("gender")
         if constants.CONTEXTS_NAME_LIST["context_religion"] in contexts_name_list:
-            all_options = (constants.OPTIONS.get("search_scholarship")).get("religion")
+            all_options = helpers.get_options("religion")
         if constants.CONTEXTS_NAME_LIST["context_interest_area"] in contexts_name_list:
-            all_options = (constants.OPTIONS.get("search_scholarship")).get("interest_area")
+            all_options = helpers.get_options("special")
     elif action == "startup":
         all_options = constants.OPTIONS.get("start_up")
 
@@ -107,3 +108,32 @@ def create_scholarship_rules(actual_scholarship, data_list):
     if actual_scholarship in data_list:
         scholarship_rules = data_list['SCHOLARSHIP_RULES']
     return scholarship_rules
+
+
+def get_schol_rules(schol_id):
+    rules = []
+    rule_list = []
+    schol_list = helpers.get_schol_list()
+    for schol in schol_list:
+        schol_nid = schol.get("NID")
+        if schol_nid == schol_id:
+            rules = schol.get("SCHOLARSHIP_RULES")
+        rule_list = []
+        for rule in rules:
+            rule_list.append(str(rule['rule']))
+    return rule_list
+
+
+def check_eligibility(schol_id, param):
+    schol_rules = get_schol_rules(schol_id)
+    print(schol_rules)
+    param_rules = helpers.convert_to_rules(param)
+    print(param_rules)
+    count = 0
+    for param_rule in param_rules:
+        if param_rule in schol_rules:
+            count += 1
+    if count == len(param_rules):
+        return True
+    else:
+        return False
