@@ -1,6 +1,6 @@
 from api import helpers
-from . import tasks
-from . import constants
+from api import tasks
+from api import constants
 from fuzzywuzzy import process
 
 
@@ -12,6 +12,7 @@ def process_request(text, session_id):
     result = api_ai_response.get('result')
     scholarships_list = []
     speech = "server error"
+    dashboard_link = ""
     if result:
         fulfillment = result.get('fulfillment')
         if fulfillment:
@@ -23,48 +24,55 @@ def process_request(text, session_id):
         options_list = get_options(contexts_name_list, action)
         if action_complete and action == "find-scholarship":
             search_result = tasks.search_scholarships(result['parameters'])
-            scholarships_list = search_result['response']['scholarships']
+            scholarships_list = search_result['data']['matchingScholarships']
             if len(scholarships_list) == 0:
                 speech = "I could not find any scholarships for this search criteria"
+            else:
+                dashboard_link = search_result['data']['dashboardLink']
         elif action_complete and action == "check-eligibility":
-            count = 0
             scholarship = result['parameters']['scholarship']
             religion = result['parameters']['religion']
             scholarship_class = result['parameters']['class']
             gender = result['parameters']['gender']
-            actual_scholarship, actual_scholarship_rules = get_scholarship_info(scholarship)
-            for rules in actual_scholarship_rules:
-                if religion or "For All" in rules['rulename']:
-                    count += 1
-                if scholarship_class in rules['rulename']:
-                    count += 1
-                if gender in rules['rulename']:
-                    count += 1
-            if count == 3:
+            params = [religion, gender, scholarship_class]
+            schol_id = helpers.get_matching_schol(scholarship)
+            actual_scholarship = tasks.get_schol_info(scholarship).get("Title")
+            result = check_eligibility(schol_id, params)
+            if result:
                 speech = "You are Eligible for {scholarship_title}".format(scholarship_title=actual_scholarship)
             else:
                 speech = "You are Not Eligible for {scholarship_title}".format(scholarship_title=actual_scholarship)
         elif action_complete and action == "scholarship-info":
             scholarship = result['parameters']['scholarship']
-            scholarship_auth_token = tasks.call_auth_api()
-            data_list = tasks.call_scholarships_api(scholarship_auth_token)
-            scholarship_dict = create_scholarship_dict(data_list)
-            actual_scholarship = (process.extractOne(scholarship, scholarship_dict.keys()))[0]
-            print(actual_scholarship)
-            if actual_scholarship in scholarship_dict:
-                scholarship_nid = scholarship_dict[actual_scholarship]
-                scholarship_detail = tasks.call_scholarship_detail_api(scholarship_nid, scholarship_auth_token)
-                speech = scholarship_detail
+            schol_info = tasks.get_schol_info(scholarship)
+
+            if schol_info.get("Title") is None:
+                speech = "Can't find scholarship "+ scholarship
+            else:
+                speech = schol_info.get("Title") + \
+                         "\nDead Line: " + schol_info.get("Deadline") + \
+                         "\nAward Money: " + schol_info.get("Award") + \
+                         "\nEligibility: " +schol_info.get("Eligibility") + \
+                         "\nApply at: " +schol_info.get("URL")
         elif action_complete and action == "report-problem":
-            pass
+            params = {"contactNumber": result['parameters']['phone'],
+             "emailAddress": result['parameters']['email'],
+             "message": result['parameters']['problem'],
+             "name": result['parameters']['name']}
+            tasks.submit_query(params)
         elif action_complete and action == "request-call":
-            pass
+            params = {"contactNumber": result['parameters']['phone'],
+                      "emailAddress": result['parameters']['email'],
+                      "message": "Call request",
+                      "name": result['parameters']['name']}
+            tasks.submit_query(params)
         if action_complete and not action == "input.unknown":
             options_list = get_options([], "startup")
         return {
             "scholarships": scholarships_list,
             "options": options_list,
-            "text": speech
+            "text": speech,
+            "dashboard_link": dashboard_link
         }
 
 

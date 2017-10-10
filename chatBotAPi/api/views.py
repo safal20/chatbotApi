@@ -14,6 +14,7 @@ def chat_data(request):
             return Response(status=status.HTTP_200_OK,
                             data={"response": response, "status": status.HTTP_200_OK})
         except Exception as e:
+            print(e)
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             data={"success": False, "error": e})
     else:
