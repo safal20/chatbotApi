@@ -72,6 +72,15 @@ def submit_query(params):
     return response.json()
 
 
+def find_schol_userid(user_id):
+    url = "{api_path}".format(api_path=get_secret("SCHOLARSHIPS_USER").format(user_id=user_id))
+    auth_token = get_auth_token()
+    headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth_token}
+    response = requests.get(url, headers=headers)
+    data = response.json().get('data')
+    return data
+
+
 def get_missing_fields(user_id):
     missing_fields = []
     url = "{api_path}".format(api_path=get_secret("MISSING_FIELDS_API").format(user_id=user_id))

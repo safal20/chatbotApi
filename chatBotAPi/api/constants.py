@@ -1,6 +1,5 @@
 OPTIONS = {
-    "start_up": [{"name": "Find Scholarships"}, {"name": "Check Eligibility"}, {"name": "Report Problem"},
-                 {"name": "Scholarship Information"}],
+    "start_up": ["Find Scholarships" ,"Check Eligibility","Report Problem", "Scholarship Information"],
     "search_scholarship": {
         "class": [{"name": "10th"}, {"name": "12th"}, {"name": "Graduate"}, {"name": "Post Graduate"},
                   {"name": "Skip"}],
@@ -10,7 +9,7 @@ OPTIONS = {
         "interest_area": [{"name": "Merit"}, {"name": "Low Income"}, {"name": "Sports"}, {"name": "Science"},
                           {"name": "Maths"}, {"name": "Literary Art"}, {"name": "Skip"}],
     },
-    "fallback": [{"name": "Report Problem"}, {"name": "Request a Call"}]
+    "fallback": ["Report Problem", "Request a Call"]
 
 }
 
