@@ -1,7 +1,6 @@
 from . import helpers
 from . import tasks
 from . import constants
-from fuzzywuzzy import process
 
 
 def process_request(text, session_id):
@@ -58,7 +57,7 @@ def process_request(text, session_id):
                 speech = "Can't find scholarship " + scholarship
             else:
                 speech = schol_info.get("Title") + \
-                         "\nDead Line: " + schol_info.get("Deadline") + \
+                         "\nDead Line: " + str(schol_info.get("Deadline")) + \
                          "\nAward Money: " + schol_info.get("Award") + \
                          "\nEligibility: " + schol_info.get("Eligibility") + \
                          "\nApply at: " + schol_info.get("URL")
@@ -90,64 +89,29 @@ def get_options(contexts_name_list, action):
     flag = False
     if action == "input.unknown":
         all_options = constants.OPTIONS.get("fallback")
-    elif action == "find-scholarship":
-        if constants.CONTEXTS_NAME_LIST["context_class"] in contexts_name_list:
-            all_options = helpers.get_options("class")
-        if constants.CONTEXTS_NAME_LIST["context_gender"] in contexts_name_list:
-            all_options = helpers.get_options("gender")
-        if constants.CONTEXTS_NAME_LIST["context_religion"] in contexts_name_list:
-            all_options = helpers.get_options("religion")
-        if constants.CONTEXTS_NAME_LIST["context_interest_area"] in contexts_name_list:
-            all_options = helpers.get_options("special")
-            flag = True
+    elif action == "find-scholarship" or action == "check-eligibility":
+        for context in contexts_name_list:
+            if "class" in context:
+                all_options = helpers.get_options("class")
+        for context in contexts_name_list:
+            if "gender" in context:
+                all_options = helpers.get_options("gender")
+        for context in contexts_name_list:
+            if "religion" in context:
+                all_options = helpers.get_options("religion")
+        for context in contexts_name_list:
+            if "interest" in context:
+                all_options = helpers.get_options("special")
+                flag = True
     elif action == "startup":
         all_options = constants.OPTIONS.get("start_up")
 
     return list(all_options), flag
 
 
-def get_scholarship_info(scholarship):
-    scholarship_auth_token = tasks.call_auth_api()
-    data_list = tasks.call_scholarships_api(scholarship_auth_token)
-    scholarship_dict = create_scholarship_dict(data_list)
-    actual_scholarship = (process.extractOne(scholarship, scholarship_dict.keys()))[0]
-    actual_scholarship_rules = create_scholarship_rules(actual_scholarship, data_list)
-    return actual_scholarship, actual_scholarship_rules
-
-
-def create_scholarship_dict(data_list):
-    scholarship_dict = dict()
-    for scholarship in data_list:
-        scholarship_dict[scholarship['TITLE']] = scholarship['NID']
-    return scholarship_dict
-
-
-def create_scholarship_rules(actual_scholarship, data_list):
-    scholarship_rules = []
-    if actual_scholarship in data_list:
-        scholarship_rules = data_list['SCHOLARSHIP_RULES']
-    return scholarship_rules
-
-
-def get_schol_rules(schol_id):
-    rules = []
-    rule_list = []
-    schol_list = helpers.get_schol_list()
-    for schol in schol_list:
-        schol_nid = schol.get("NID")
-        if schol_nid == schol_id:
-            rules = schol.get("SCHOLARSHIP_RULES")
-        rule_list = []
-        for rule in rules:
-            rule_list.append(str(rule['rule']))
-    return rule_list
-
-
 def check_eligibility(schol_id, param):
-    schol_rules = get_schol_rules(schol_id)
-    print(schol_rules)
+    schol_rules = helpers.transform_rules(helpers.get_schol_rules(schol_id))
     param_rules = helpers.convert_to_rules(param)
-    print(param_rules)
     count = 0
     for param_rule in param_rules:
         if param_rule in schol_rules:

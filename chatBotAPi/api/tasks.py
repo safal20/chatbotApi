@@ -1,7 +1,7 @@
 import json
 
 import requests
-from api import helpers
+from . import helpers
 
 from config.settings.base import get_secret
 
@@ -114,18 +114,17 @@ def search_scholarships(params):
 def get_schol_info(schol_name):
     schol_id = helpers.get_matching_schol(schol_name)
     schol_info = {}
-    auth_token = call_auth_api()
-    url = "{api_path}/{nid}".format(api_path=get_secret("SCHOLARSHIP_DETAIL_API_URL"), nid=schol_id)
-    headers = {'Content-Type': 'application/json', 'B4SAUTH': auth_token}
-    response = requests.get(url, headers=headers)
-    body = response.json().get("BODY")
-    schol_body = body.get("SCHOLARSHIP_BODY")
-    data = body.get("DATA")
-    schol_info["Title"] = data.get("TITLE")
-    schol_info["Deadline"] = data.get("DEADLINE")
-    schol_info["URL"] = get_secret("SCHOLARSHIP_PAGE").format(slug=data.get("SLUG"))
-    schol_info["Award"] = data.get("PURPOSE_AWARDS")
-    schol_info["Eligibility"] = schol_body.get("ELIGIBILITY")
+    schol_list = helpers.get_schol_list()
+    for schol in schol_list:
+        schol_nid = schol.get("nid")
+        if schol_nid == schol_id:
+            schol_info["Title"] = schol.get("scholarshipName")
+            schol_info["Deadline"] = schol.get("deadline")
+            schol_info["URL"] = get_secret("VODAFONE_PAGE").format(slug=schol.get("slug"))
+            for multi in schol.get("scholarshipMultilinguals"):
+                if multi.get("languageId") == 2:
+                    schol_info["Eligibility"] = multi.get("applicableFor")
+                    schol_info["Award"] = multi.get("purposeAward")
     return schol_info
 
 

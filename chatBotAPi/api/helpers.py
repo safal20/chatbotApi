@@ -61,26 +61,17 @@ def get_options(param):
 
 
 def get_schol_list():
-    with open(get_secret("SCHOLARSHIPS_JSON_FILE")) as data_file:
+    with open(get_secret("VODAFONE_SCHOLARSHIP_FILE")) as data_file:
         file_data = json.load(data_file)
-    body = file_data.get("BODY")
-    data = body.get("DATA")
+    data = file_data.get("data")
     return data
-
-
-def get_schol_titles():
-    schol_titles = []
-    schol_list = get_schol_list()
-    for schol in schol_list:
-        schol_titles.append(str(schol.get("TITLE")))
-    return schol_titles
 
 
 def get_schol_dict():
     schol_dict = {}
     schol_list = get_schol_list()
     for schol in schol_list:
-        schol_dict[schol.get("TITLE")] = schol.get("NID")
+        schol_dict[schol.get("scholarshipName")] = schol.get("nid")
     return schol_dict
 
 
@@ -90,3 +81,40 @@ def get_matching_schol(schol):
     matching_schol = process.extractOne(schol, schol_titles)[0]
     schol_nid = schol_dict[matching_schol]
     return schol_nid
+
+
+def transform_rules(rules):
+    output = []
+    rule_list = get_rule_list()
+    religion_list = convert_to_rules(get_options("religion"))
+    count = 0
+    for rule in rules:
+        if rule in religion_list:
+            count += 1;
+    if count == 0:
+        for rule in religion_list:
+            output.append(rule)
+    if "229" in rules:
+        for rule in rule_list:
+            if rule[1] == "5" and not rule[0] == "229":
+                output.append(rule[0])
+    for rule in rules:
+        if rule not in output:
+            output.append(rule)
+    return output
+
+
+def get_schol_rules(schol_id):
+    rules = []
+    rule_list = []
+    schol_list = get_schol_list()
+    for schol in schol_list:
+        schol_nid = schol.get("nid")
+        # print (scholNid)
+        if schol_nid == schol_id:
+            rules = schol.get("scholarshipRules")
+        for rule in rules:
+            # print(rule)
+            if str(rule.get("rule").get("id")) not in rule_list:
+                rule_list.append(str(rule.get("rule").get("id")))
+    return rule_list
