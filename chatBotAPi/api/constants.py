@@ -1,5 +1,5 @@
 OPTIONS = {
-    "start_up": ["Find Scholarships" ,"Check Eligibility", "Scholarship Information", "Report Problem", "Request Calls"],
+    "start_up": ["Find Scholarships" ,"Check Eligibility", "Scholarship Information", "Report Problem", "Request a Call"],
     "fallback": ["Report Problem", "Request a Call"]
 
 }

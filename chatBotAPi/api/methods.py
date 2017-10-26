@@ -62,10 +62,18 @@ def process_request(text, session_id, user_id):
                 speech = "Can't find scholarship " + scholarship
             else:
                 speech = schol_info.get("Title") + \
-                         "\nDead Line: " + str(schol_info.get("Deadline")) + \
-                         "\nAward Money: " + schol_info.get("Award") + \
-                         "\nEligibility: " + schol_info.get("Eligibility") + \
-                         "\nApply at: " + schol_info.get("URL")
+                         "<br> Dead Line: " + str(schol_info.get("Deadline")) + \
+                         "<br> Award Money: " + schol_info.get("Award") + \
+                         "<br> Eligibility: " + schol_info.get("Eligibility") + \
+                         "<br> <a href= '"+schol_info.get("URL")+"'>Apply here </a>"
+                scholarships_list.append({
+                    "nid":schol_info.get("Nid"),
+                    "detailsUrl":schol_info.get("URL"),
+                    "scholarshipTitle":schol_info.get("Title"),
+                    "awardMoney":schol_info.get("Award"),
+                    "eligibility":schol_info.get("Eligibility"),
+                    "deadline":schol_info.get("Deadline")
+                })
 
         elif action_complete and action == "report-problem":
             params = {"contactNumber": result['parameters']['phone'],
