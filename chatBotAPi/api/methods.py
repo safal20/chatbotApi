@@ -130,8 +130,17 @@ def process_request(text, session_id, user_id):
                           "name": details.get("name")}
                 tasks.submit_query(params)
 
-        if action_complete and not action == "input.unknown":
+        if action_complete:
             options_list, check_box = get_options([], "startup")
+        if action == "startup" or action == "input.unknown" and action_complete:
+            if user_id:
+                try:
+                    tasks.call_third_party_api(post_data=
+                                               {"query": "user-signed-in",
+                                                "sessionId": session_id,
+                                                "lang": "en"})
+                except Exception:
+                    speech = "Could not connect to text processor."
     return {
         "scholarships": scholarships_list,
         "options": options_list,
@@ -175,7 +184,7 @@ def check_eligibility(schol_id, param):
     for param_rule in param_rules:
         if param_rule in schol_rules:
             count += 1
-    if count >= len(param_rules):
+    if count == len(param_rules):
         return True
     else:
         return False
