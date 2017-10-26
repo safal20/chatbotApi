@@ -82,7 +82,7 @@ def find_schol_userid(user_id):
 
 
 def get_missing_fields(user_id):
-    missing_fields = []
+    missing_fields_dict = {}
     url = "{api_path}".format(api_path=get_secret("MISSING_FIELDS_API").format(user_id=user_id))
     auth_token = get_auth_token()
     headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth_token}
@@ -90,7 +90,11 @@ def get_missing_fields(user_id):
     data = response.json().get('data')
     if data:
         missing_fields = data.get('missingFields')
-    return missing_fields
+        for field in missing_fields:
+            if not field == "":
+                missing_fields_dict[field] = True
+
+    return missing_fields_dict
 
 
 def search_scholarships(params):
@@ -136,3 +140,30 @@ def get_scholarships_file():
     data = response.json()
     with open(get_secret("SCHOLARSHIPS_JSON_FILE"), 'w') as outfile:
         json.dump(data, outfile)
+
+
+def get_user_details(user_id):
+    url = "{api_path}".format(api_path=get_secret("USER_DETAILS").format(user_id=user_id))
+    auth_token = get_auth_token()
+    headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth_token}
+    response = requests.post(url, headers=headers)
+    data = response.json().get("data").get("BODY").get("DATA")
+    user = data.get("USER")
+    name = user.get("FIRST_NAME") + " " + user.get("LAST_NAME")
+    email = user.get("EMAIL")
+    phone = user.get("MOBILE_NUMBER")
+
+    return {
+        "name":name,
+        "email":email,
+        "phone":phone
+    }
+
+
+def update_user(user_id, field, value):
+    post_data = {field:value}
+    url = "{api_path}".format(api_path=get_secret("UPDATE_USER_DETAILS").format(user_id=user_id))
+    auth_token = get_auth_token()
+    headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth_token}
+    response = requests.post(url, headers=headers, data=json.dumps(post_data))
+    return response
