@@ -71,14 +71,14 @@ def process_request(text, session_id, user_id):
             params = {"contactNumber": result['parameters']['phone'],
                       "emailAddress": result['parameters']['email'],
                       "message": result['parameters']['problem'],
-                      "name": result['parameters']['name']}
+                      "name": result['parameters']['first_name'] + " " + result['parameters']['last_name']}
             tasks.submit_query(params)
 
         elif action_complete and action == "request-call":
             params = {"contactNumber": result['parameters']['phone'],
                       "emailAddress": result['parameters']['email'],
                       "message": "Call request",
-                      "name": result['parameters']['name']}
+                      "name": result['parameters']['first_name'] + " " + result['parameters']['last_name']}
             tasks.submit_query(params)
 
         elif action_complete and action == "find-scholarship-userid":
