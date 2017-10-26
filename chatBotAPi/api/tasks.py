@@ -122,6 +122,7 @@ def get_schol_info(schol_name):
     for schol in schol_list:
         schol_nid = schol.get("nid")
         if schol_nid == schol_id:
+            schol_info['Nid'] = schol_id
             schol_info["Title"] = schol.get("scholarshipName")
             schol_info["Deadline"] = schol.get("deadline")
             schol_info["URL"] = get_secret("VODAFONE_PAGE").format(slug=schol.get("slug"))
