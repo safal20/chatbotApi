@@ -11,6 +11,7 @@ def process_request(text, session_id, user_id):
     check_box = False
     is_missing = False
     missing_fields = []
+    api_ai_response = ""
     try:
         api_ai_response = tasks.call_third_party_api(post_data=
                                                      {"query": text,
@@ -38,8 +39,17 @@ def process_request(text, session_id, user_id):
                     speech = "I could not find any scholarships for this search criteria"
                 else:
                     dashboard_link = search_result['data']['dashboardLink']
+                    user_id = search_result['data']['userId']
+                    tasks.call_third_party_api(post_data=
+                                               {"query": "user-signed-in",
+                                                "sessionId": session_id,
+                                                "lang": "en"})
             except Exception:
                 speech = search_result.get("error").get("errorMessage")
+                tasks.call_third_party_api(post_data=
+                                           {"query": "clear-saved-param",
+                                            "sessionId": session_id,
+                                            "lang": "en"})
 
         elif action_complete and action == "check-eligibility":
             scholarship = result['parameters']['scholarship']
@@ -156,7 +166,9 @@ def process_request(text, session_id, user_id):
         "dashboard_link": dashboard_link,
         "checkBox": check_box,
         "missingFields": missing_fields,
-        "isMissing": is_missing
+        "isMissing": is_missing,
+        "api_ai_response" : api_ai_response,
+        "userId" : user_id
     }
 
 
@@ -165,7 +177,7 @@ def get_options(contexts_name_list, action):
     flag = False
     if action == "input.unknown":
         all_options = constants.OPTIONS.get("fallback")
-    elif action == "find-scholarship" or action == "check-eligibility":
+    elif action == "find-scholarship" or action == "check-eligibility" or action == "list-interest-area":
         for context in contexts_name_list:
             if "class" in context:
                 all_options = helpers.get_options("class")
