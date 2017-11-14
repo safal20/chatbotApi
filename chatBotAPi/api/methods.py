@@ -2,6 +2,8 @@ from . import helpers
 from . import tasks
 from . import constants
 
+from datetime import date
+
 
 def process_request(text, session_id, user_id):
     scholarships_list = []
@@ -12,6 +14,8 @@ def process_request(text, session_id, user_id):
     is_missing = False
     missing_fields = []
     api_ai_response = ""
+    schol_info_result = {}
+    result = {}
     try:
         api_ai_response = tasks.call_third_party_api(post_data=
                                                      {"query": text,
@@ -26,30 +30,58 @@ def process_request(text, session_id, user_id):
             speech = fulfillment.get('speech')
 
         action = result.get('action')
+        print(action)
         action_complete = not (result.get('actionIncomplete'))
         contexts = result.get('contexts')
         contexts_name_list = [context['name'] for context in contexts]
         options_list, check_box = get_options(contexts_name_list, action)
 
+        if action_complete and action != "confirm-signup" and action != "ask-missing-field":
+            options_list, check_box = get_options([], "startup")
+
+        if action_complete and action == "sign-up":
+            speech = "<a href='http://www.learningwithvodafone.in'>Click here to sign up.</a>"
+
         if action_complete and action == "find-scholarship":
             try:
                 search_result = tasks.search_scholarships(result['parameters'])
-                scholarships_list = search_result['data']['matchingScholarships']
-                if len(scholarships_list) == 0:
-                    speech = "I could not find any scholarships for this search criteria"
-                else:
-                    dashboard_link = search_result['data']['dashboardLink']
-                    user_id = search_result['data']['userId']
-                    tasks.call_third_party_api(post_data=
-                                               {"query": "user-signed-in",
-                                                "sessionId": session_id,
-                                                "lang": "en"})
-            except Exception:
-                speech = search_result.get("error").get("errorMessage")
+                scholarships_list = remove_invalid_scholarships(search_result['data']['matchingScholarships'])
+                dashboard_link = search_result['data']['dashboardLink']
+                user_id = search_result['data']['userId']
                 tasks.call_third_party_api(post_data=
-                                           {"query": "clear-saved-param",
+                                           {"query": "user-signed-in",
                                             "sessionId": session_id,
                                             "lang": "en"})
+                if len(scholarships_list) == 0:
+                    speech = "I could not find any matching scholarships for you."
+                else:
+                    if len(scholarships_list) >= 4:
+                        speech = "Based on your profile here are your 4 out of {schol_num} matched scholarships".format(
+                            schol_num=len(scholarships_list))
+                    else:
+                        speech = "Based on your profile here are your {schol_num} matched scholarships".format(
+                            schol_num=len(scholarships_list))
+            except Exception:
+                speech = search_result.get("error").get("errorMessage")
+                if speech.find("Mobile") != -1:
+                    temp_response = tasks.call_third_party_api(post_data=
+                                                               {"query": "ask-mobile-number",
+                                                                "sessionId": session_id,
+                                                                "lang": "en"})
+                    options_list, check_box = get_options(contexts_name_list, temp_response.get("result").get("action"))
+                    speech = temp_response.get("result").get("fulfillment").get("speech")
+                elif speech.find("Email") != -1:
+                    temp_response = tasks.call_third_party_api(post_data=
+                                                               {"query": "ask-email",
+                                                                "sessionId": session_id,
+                                                                "lang": "en"})
+                    options_list, check_box = get_options(contexts_name_list, temp_response.get("result").get("action"))
+                    speech = temp_response.get("result").get("fulfillment").get("speech")
+                else:
+                    tasks.call_third_party_api(post_data=
+                                               {"query": "clear-saved-param",
+                                                "sessionId": session_id,
+                                                "lang": "en"})
 
         elif action_complete and action == "check-eligibility":
             scholarship = result['parameters']['scholarship']
@@ -57,33 +89,43 @@ def process_request(text, session_id, user_id):
             scholarship_class = result['parameters']['class']
             gender = result['parameters']['gender']
             params = [religion, gender, scholarship_class]
-            schol_id = helpers.get_matching_schol(scholarship)
-            actual_scholarship = tasks.get_schol_info(scholarship).get("Title")
-            result = check_eligibility(schol_id, params)
-            if result:
-                speech = "You are Eligible for {scholarship_title}".format(scholarship_title=actual_scholarship)
+            schol_id, score = helpers.get_matching_schol(scholarship)
+            if (score > 70):
+                schol_info = tasks.get_schol_info(scholarship)
+                schol_url = schol_info.get("URL")
+                actual_scholarship = schol_info.get("Title")
+                eligibility_result = check_eligibility(schol_id, params)
+                if eligibility_result:
+                    speech = "You are Eligible for {scholarship_title}. \
+                    <a href='{scholarship_url}'>Click here for more info.</a>".format(
+                        scholarship_title=actual_scholarship, scholarship_url=schol_url)
+                else:
+                    speech = "You are Not Eligible for {scholarship_title}. \
+                    <a href='{scholarship_url}'>Click here for more info.</a>".format(
+                        scholarship_title=actual_scholarship, scholarship_url=schol_url)
             else:
-                speech = "You are Not Eligible for {scholarship_title}".format(scholarship_title=actual_scholarship)
+                speech = "Scholarship not found."
         elif action_complete and action == "scholarship-info":
             scholarship = result['parameters']['scholarship']
             schol_info = tasks.get_schol_info(scholarship)
+            schol_info_result = {}
 
             if schol_info.get("Title") is None:
                 speech = "Can't find scholarship " + scholarship
             else:
-                speech = schol_info.get("Title") + \
+                speech = "<a href= '" + schol_info.get("URL") + "'>" + schol_info.get("Title") + "</a>" + \
                          "<br> Dead Line: " + str(schol_info.get("Deadline")) + \
                          "<br> Award Money: " + schol_info.get("Award") + \
                          "<br> Eligibility: " + schol_info.get("Eligibility") + \
-                         "<br> <a href= '"+schol_info.get("URL")+"'>Apply here </a>"
-                scholarships_list.append({
-                    "nid":schol_info.get("Nid"),
-                    "detailsUrl":schol_info.get("URL"),
-                    "scholarshipTitle":schol_info.get("Title"),
-                    "awardMoney":schol_info.get("Award"),
-                    "eligibility":schol_info.get("Eligibility"),
-                    "deadline":schol_info.get("Deadline")
-                })
+                         "<br> <a href= '" + schol_info.get("URL") + "'>Apply here </a>"
+                schol_info_result = {
+                    "nid": schol_info.get("Nid"),
+                    "detailsUrl": schol_info.get("URL"),
+                    "scholarshipTitle": schol_info.get("Title"),
+                    "awardMoney": schol_info.get("Award"),
+                    "eligibility": schol_info.get("Eligibility"),
+                    "deadline": schol_info.get("Deadline")
+                }
 
         elif action_complete and action == "report-problem":
             params = {"contactNumber": result['parameters']['phone'],
@@ -100,14 +142,26 @@ def process_request(text, session_id, user_id):
             tasks.submit_query(params)
 
         elif action_complete and action == "find-scholarship-userid":
-            scholarships_list = tasks.find_schol_userid(user_id)
+            scholarships_list = remove_invalid_scholarships(tasks.find_schol_userid(user_id))
+            if len(scholarships_list) == 0:
+                speech = "I could not find any matching scholarships for you."
+            else:
+                if len(scholarships_list) >= 4:
+                    speech = "Based on your profile here are your 4 out of {schol_num} matched scholarships".format(
+                        schol_num=len(scholarships_list))
+                else:
+                    speech = "Based on your profile here are your {schol_num} matched scholarships".format(
+                        schol_num=len(scholarships_list))
 
         elif action_complete and action == "update-missing-field":
             missing_field = result['parameters']['field']
             value = result['parameters']['value']
-            print(missing_field, value)
-
-            tasks.update_user(user_id, missing_field, value)
+            if missing_field == "Class" or missing_field == "Gender":
+                contexts_name_list.append(missing_field)
+                value = helpers.convert_to_rules([value])[0]
+                tasks.update_user_rule(user_id, value)
+            else:
+                tasks.update_user(user_id, missing_field, value)
 
         elif action_complete and action == "get-missing-fields":
             if user_id:
@@ -117,18 +171,27 @@ def process_request(text, session_id, user_id):
 
         elif action_complete and action == "check-eligibility-userid":
             scholarship = result['parameters']['scholarship']
-            actual_scholarship = tasks.get_schol_info(scholarship).get("Title")
-            nid = helpers.get_matching_schol(scholarship)
-            if user_id:
-                schol_list = tasks.find_schol_userid(user_id)
-                found = False
-                for schol in schol_list:
-                    if schol.get("nid") == nid:
-                        found = True
-                if found:
-                    speech = "You are eligible for " + actual_scholarship
-                else:
-                    speech = "You are not eligible for " + actual_scholarship
+            schol_info = tasks.get_schol_info(scholarship)
+            actual_scholarship = schol_info.get("Title")
+            schol_url = schol_info.get("URL")
+            nid, score = helpers.get_matching_schol(scholarship)
+            if score > 70:
+                if user_id:
+                    schol_list = tasks.find_schol_userid(user_id)
+                    found = False
+                    for schol in schol_list:
+                        if schol.get("nid") == nid:
+                            found = True
+                    if found:
+                        speech = "You are Eligible for {scholarship_title}. \
+                        <a href='{scholarship_url}'>Click here for more info.</a>".format(
+                            scholarship_title=actual_scholarship, scholarship_url=schol_url)
+                    else:
+                        speech = "You are Not Eligible for {scholarship_title}. \
+                        <a href='{scholarship_url}'>Click here for more info.</a>".format(
+                            scholarship_title=actual_scholarship, scholarship_url=schol_url)
+            else:
+                speech = "Scholarship " + scholarship + " not found."
 
         elif action_complete and action == "report-problem-userid":
             if user_id:
@@ -148,8 +211,6 @@ def process_request(text, session_id, user_id):
                           "name": details.get("name")}
                 tasks.submit_query(params)
 
-        if action_complete:
-            options_list, check_box = get_options([], "startup")
         if action == "startup" or action == "input.unknown" and action_complete:
             if user_id:
                 try:
@@ -159,7 +220,11 @@ def process_request(text, session_id, user_id):
                                                 "lang": "en"})
                 except Exception:
                     speech = "Could not connect to text processor."
-    return {
+    if user_id:
+        if "Sign Up" in options_list:
+            options_list = options_list.copy()
+            options_list.remove("Sign Up")
+    output = {
         "scholarships": scholarships_list,
         "options": options_list,
         "text": speech,
@@ -167,9 +232,12 @@ def process_request(text, session_id, user_id):
         "checkBox": check_box,
         "missingFields": missing_fields,
         "isMissing": is_missing,
-        "api_ai_response" : api_ai_response,
-        "userId" : user_id
+        "api_ai_response": api_ai_response,
+        "userId": user_id
     }
+    if schol_info_result:
+        output["scholInfo"] = schol_info_result
+    return output
 
 
 def get_options(contexts_name_list, action):
@@ -177,7 +245,7 @@ def get_options(contexts_name_list, action):
     flag = False
     if action == "input.unknown":
         all_options = constants.OPTIONS.get("fallback")
-    elif action == "find-scholarship" or action == "check-eligibility" or action == "list-interest-area":
+    elif action == "find-scholarship" or action == "check-eligibility" or action == "update-missing-field":
         for context in contexts_name_list:
             if "class" in context:
                 all_options = helpers.get_options("class")
@@ -193,7 +261,9 @@ def get_options(contexts_name_list, action):
                 flag = True
     elif action == "startup":
         all_options = constants.OPTIONS.get("start_up")
-
+    elif action == "ask-missing-field" or action == "confirm-signup":
+        all_options = constants.OPTIONS.get("ask_missing_field")
+    print(all_options)
     return list(all_options), flag
 
 
@@ -208,3 +278,19 @@ def check_eligibility(schol_id, param):
         return True
     else:
         return False
+
+
+def remove_invalid_scholarships(scholarship_list):
+    out_list = []
+    for scholarship in scholarship_list:
+        deadline = None
+        if scholarship.get("onlineDeadline"):
+            deadline = scholarship.get("onlineDeadline")
+        elif scholarship.get("deadlineDate"):
+            deadline = scholarship.get("deadlineDate")
+        elif scholarship.get("offlineDeadline"):
+            deadline = scholarship.get("offlineDeadline")
+        if deadline:
+            if deadline > str(date.today()):
+                out_list.append(scholarship)
+    return out_list

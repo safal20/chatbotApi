@@ -3,6 +3,7 @@ import csv
 import json
 
 from fuzzywuzzy import process
+from fuzzywuzzy import fuzz
 
 from config.settings.base import get_secret
 
@@ -49,6 +50,16 @@ def convert_to_rules(param_list):
     return converted_rules
 
 
+def convert_to_rules_by_rule(param_list, rule_type):
+    rule_list = get_rule_list()
+    converted_rules = []
+    for param in param_list:
+        for rule in rule_list:
+            if rule[1] == rule_type and rule[2] == param:
+                converted_rules.append(int(rule[0]))
+    return converted_rules
+
+
 def get_options(param):
     options = []
     rule_type_dict = get_rule_type_dict()
@@ -78,9 +89,9 @@ def get_schol_dict():
 def get_matching_schol(schol):
     schol_dict = get_schol_dict()
     schol_titles = schol_dict.keys()
-    matching_schol = process.extractOne(schol, schol_titles)[0]
+    matching_schol, score = process.extractOne(schol, schol_titles, scorer=fuzz.partial_token_sort_ratio)
     schol_nid = schol_dict[matching_schol]
-    return schol_nid
+    return schol_nid, score
 
 
 def transform_rules(rules):
@@ -118,3 +129,4 @@ def get_schol_rules(schol_id):
             if str(rule.get("rule").get("id")) not in rule_list:
                 rule_list.append(str(rule.get("rule").get("id")))
     return rule_list
+

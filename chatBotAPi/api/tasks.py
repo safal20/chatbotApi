@@ -82,7 +82,7 @@ def find_schol_userid(user_id):
 
 
 def get_missing_fields(user_id):
-    missing_fields_dict = {}
+    missing_fields = []
     url = "{api_path}".format(api_path=get_secret("MISSING_FIELDS_API").format(user_id=user_id))
     auth_token = get_auth_token()
     headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth_token}
@@ -90,24 +90,22 @@ def get_missing_fields(user_id):
     data = response.json().get('data')
     if data:
         missing_fields = data.get('missingFields')
-        for field in missing_fields:
-            if not field == "":
-                missing_fields_dict[field] = True
 
-    return missing_fields_dict
+    return missing_fields
 
 
 def search_scholarships(params):
     rules_list = list()
-    rules_list.append(params['class'])
-    rules_list.append(params['gender'])
-    rules_list.append(params['religion'])
-    rules = rules_list + params['interest-area']
+    rules_list = rules_list + helpers.convert_to_rules_by_rule([params['class']], '1')
+    rules_list = rules_list + helpers.convert_to_rules_by_rule([params['gender']], '5')
+    rules_list = rules_list + helpers.convert_to_rules_by_rule([params['religion']], '4')
+    rules = rules_list + helpers.convert_to_rules_by_rule(params['interest-area'], '7')
     post_data = {"email": params['email'],
                  "firstName": params['first_name'],
                  "lastName": params['last_name'],
                  "mobileNumber": params['phone'],
-                 "rules": helpers.convert_to_rules(rules)}
+                 "rules": rules}
+    print(post_data)
     url = "{api_path}".format(api_path=get_secret("USER_REGISTER_API"))
     auth_token = get_auth_token()
     headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth_token}
@@ -116,20 +114,28 @@ def search_scholarships(params):
 
 
 def get_schol_info(schol_name):
-    schol_id = helpers.get_matching_schol(schol_name)
+    schol_id, score = helpers.get_matching_schol(schol_name)
     schol_info = {}
-    schol_list = helpers.get_schol_list()
-    for schol in schol_list:
-        schol_nid = schol.get("nid")
-        if schol_nid == schol_id:
-            schol_info['Nid'] = schol_id
-            schol_info["Title"] = schol.get("scholarshipName")
-            schol_info["Deadline"] = schol.get("deadline")
-            schol_info["URL"] = get_secret("VODAFONE_PAGE").format(slug=schol.get("slug"))
-            for multi in schol.get("scholarshipMultilinguals"):
-                if multi.get("languageId") == 2:
-                    schol_info["Eligibility"] = multi.get("applicableFor")
-                    schol_info["Award"] = multi.get("purposeAward")
+    if score > 60:
+        schol_list = helpers.get_schol_list()
+        for schol in schol_list:
+            schol_nid = schol.get("nid")
+            if schol_nid == schol_id:
+                schol_info['Nid'] = schol_id
+                schol_info["Title"] = schol.get("scholarshipName")
+                if schol.get("onlineDeadline"):
+                    schol_info["Deadline"] = schol.get("onlineDeadline")
+                elif schol.get("deadlineDate"):
+                    schol_info["Deadline"] = schol.get("deadlineDate")
+                elif schol.get("offlineDeadline"):
+                    schol_info["Deadline"] = schol.get("offlineDeadline")
+                else:
+                    schol_info["Deadline"] = "Coming Soon"
+                schol_info["URL"] = get_secret("VODAFONE_PAGE").format(slug=schol.get("slug"))
+                for multi in schol.get("scholarshipMultilinguals"):
+                    if multi.get("languageId") == 2:
+                        schol_info["Eligibility"] = multi.get("applicableFor")
+                        schol_info["Award"] = multi.get("purposeAward")
     return schol_info
 
 
@@ -167,4 +173,12 @@ def update_user(user_id, field, value):
     auth_token = get_auth_token()
     headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth_token}
     response = requests.post(url, headers=headers, data=json.dumps(post_data))
+    return response
+
+
+def update_user_rule(user_id, rule):
+    url = "{api_path}".format(api_path=get_secret("ADD_USER_RULE").format(user_id=user_id, rule=rule))
+    auth_token = get_auth_token()
+    headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + auth_token}
+    response = requests.post(url, headers=headers)
     return response

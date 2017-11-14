@@ -1,7 +1,7 @@
 OPTIONS = {
-    "start_up": ["Find Scholarships" ,"Check Eligibility", "Scholarship Information", "Report Problem", "Request a Call"],
-    "fallback": ["Report Problem", "Request a Call"]
-
+    "start_up": ["Find Scholarships" ,"Check Eligibility", "Scholarship Information", "Report Problem", "Request a Call", "Sign Up"],
+    "fallback": ["Report Problem", "Request a Call"],
+    "ask_missing_field" : ["Yes", "No"]
 }
 
 CONTEXTS_NAME_LIST = {
