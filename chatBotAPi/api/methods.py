@@ -45,7 +45,10 @@ def process_request(text, session_id, user_id):
         if action_complete and action == "find-scholarship":
             try:
                 search_result = tasks.search_scholarships(result['parameters'])
-                scholarships_list = remove_invalid_scholarships(search_result['data']['matchingScholarships'])
+                scholarships_list = search_result['data']['matchingScholarships']
+                print(scholarships_list)
+                scholarships_list = remove_invalid_scholarships(scholarships_list)
+                print(scholarships_list)
                 dashboard_link = search_result['data']['dashboardLink']
                 user_id = search_result['data']['userId']
                 tasks.call_third_party_api(post_data=
@@ -58,6 +61,8 @@ def process_request(text, session_id, user_id):
                     if len(scholarships_list) >= 4:
                         speech = "Based on your profile here are your 4 out of {schol_num} matched scholarships".format(
                             schol_num=len(scholarships_list))
+                    elif len(scholarships_list) == 1:
+                        speech = "Based on your profile here is your matched scholarship"
                     else:
                         speech = "Based on your profile here are your {schol_num} matched scholarships".format(
                             schol_num=len(scholarships_list))
@@ -142,13 +147,17 @@ def process_request(text, session_id, user_id):
             tasks.submit_query(params)
 
         elif action_complete and action == "find-scholarship-userid":
+            print(tasks.find_schol_userid(user_id))
             scholarships_list = remove_invalid_scholarships(tasks.find_schol_userid(user_id))
+            print(scholarships_list)
             if len(scholarships_list) == 0:
                 speech = "I could not find any matching scholarships for you."
             else:
                 if len(scholarships_list) >= 4:
                     speech = "Based on your profile here are your 4 out of {schol_num} matched scholarships".format(
                         schol_num=len(scholarships_list))
+                elif len(scholarships_list) == 1:
+                    speech = "Based on your profile here is your matched scholarship"
                 else:
                     speech = "Based on your profile here are your {schol_num} matched scholarships".format(
                         schol_num=len(scholarships_list))
@@ -282,15 +291,9 @@ def check_eligibility(schol_id, param):
 
 def remove_invalid_scholarships(scholarship_list):
     out_list = []
-    for scholarship in scholarship_list:
-        deadline = None
-        if scholarship.get("onlineDeadline"):
-            deadline = scholarship.get("onlineDeadline")
-        elif scholarship.get("deadlineDate"):
-            deadline = scholarship.get("deadlineDate")
-        elif scholarship.get("offlineDeadline"):
-            deadline = scholarship.get("offlineDeadline")
-        if deadline:
-            if deadline > str(date.today()):
-                out_list.append(scholarship)
+    for schol in scholarship_list:
+        scholarship = tasks.get_schol_info_nid(schol.get("nid"))
+        deadline = scholarship.get("Deadline")
+        if deadline > str(date.today()):
+            out_list.append(schol)
     return out_list

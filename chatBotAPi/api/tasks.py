@@ -139,6 +139,30 @@ def get_schol_info(schol_name):
     return schol_info
 
 
+def get_schol_info_nid(schol_id):
+    schol_info = {}
+    schol_list = helpers.get_schol_list()
+    for schol in schol_list:
+        schol_nid = schol.get("nid")
+        if schol_nid == schol_id:
+            schol_info['Nid'] = schol_id
+            schol_info["Title"] = schol.get("scholarshipName")
+            if schol.get("onlineDeadline"):
+                schol_info["Deadline"] = schol.get("onlineDeadline")
+            elif schol.get("deadlineDate"):
+                schol_info["Deadline"] = schol.get("deadlineDate")
+            elif schol.get("offlineDeadline"):
+                schol_info["Deadline"] = schol.get("offlineDeadline")
+            else:
+                schol_info["Deadline"] = "Coming Soon"
+            schol_info["URL"] = get_secret("VODAFONE_PAGE").format(slug=schol.get("slug"))
+            for multi in schol.get("scholarshipMultilinguals"):
+                if multi.get("languageId") == 2:
+                    schol_info["Eligibility"] = multi.get("applicableFor")
+                    schol_info["Award"] = multi.get("purposeAward")
+    return schol_info
+
+
 def get_scholarships_file():
     auth_token = call_auth_api()
     url = "{api_path}".format(api_path=get_secret("SCHOLARSHIP_API_URL"))
