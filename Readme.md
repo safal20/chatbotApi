@@ -183,7 +183,9 @@ sudo service nginx restart
 ```
 The server is now ready. We can test this by sending a POST request to the server url at the path /api/chat/
 
-These can be restarted using the commands
+***
+
+Nginx and uWSGI services can be restarted using the commands
 ```sh
 sudo systemctl restart uwsgi.service
 sudo service nginx restart
