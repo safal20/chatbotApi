@@ -177,10 +177,11 @@ Now that we have set up everything, we need to start the services. To start uWSG
 sudo systemctl start uwsgi.service
 ```
 
-To start Nginx, we use upstart.
+To refresh Nginx, we have to restart it.
 ```sh
-sudo service nginx start
+sudo service nginx restart
 ```
+The server is now ready. We can test this by sending a POST request to the server url at the path /api/chat/
 
 These can be restarted using the commands
 ```sh
