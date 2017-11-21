@@ -241,7 +241,7 @@ def process_request(text, session_id, user_id):
         "checkBox": check_box,
         "missingFields": missing_fields,
         "isMissing": is_missing,
-        "api_ai_response": api_ai_response,
+        "dialogflow_response": api_ai_response,
         "userId": user_id
     }
     if schol_info_result:
